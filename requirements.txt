@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+python-dotenv
+gspread                  # Google Sheets
+google-auth              # Google service account auth
+pydantic
+requests                 # for Odoo DB creation call
