@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Company Details{% endblock %}
+{% block step_num %}1{% endblock %}
+{% block progress_pct %}33%{% endblock %}
+{% block s1 %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1>Company Details</h1>
+        <p>Tell us about the main company. We'll set up a dedicated workspace for it.</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">⚠ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/onboarding/step1">
+        <div class="form-grid">
+            <div class="field full">
+                <label>Company Name *</label>
+                <input type="text" name="name" placeholder="e.g. Acme Corporation"
+                       value="{{ data.name or '' }}" required/>
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="info@company.com"
+                       value="{{ data.email or '' }}"/>
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="tel" name="phone" placeholder="+20 100 000 0000"
+                       value="{{ data.phone or '' }}"/>
+            </div>
+            <div class="field">
+                <label>Country</label>
+                <select name="country">
+                    <option value="">— Select —</option>
+                    <option value="EG" {% if data.country == 'EG' %}selected{% endif %}>Egypt</option>
+                    <option value="SA" {% if data.country == 'SA' %}selected{% endif %}>Saudi Arabia</option>
+                    <option value="AE" {% if data.country == 'AE' %}selected{% endif %}>UAE</option>
+                    <option value="US" {% if data.country == 'US' %}selected{% endif %}>United States</option>
+                    <option value="GB" {% if data.country == 'GB' %}selected{% endif %}>United Kingdom</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>City</label>
+                <input type="text" name="city" placeholder="Cairo"
+                       value="{{ data.city or '' }}"/>
+            </div>
+            <div class="field full">
+                <label>Website</label>
+                <input type="url" name="website" placeholder="https://company.com"
+                       value="{{ data.website or '' }}"/>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <span></span>
+            <button type="submit" class="btn btn-primary">
+                Next — Branches →
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

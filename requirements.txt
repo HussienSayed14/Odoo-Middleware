@@ -1,7 +1,10 @@
 fastapi
 uvicorn
 python-dotenv
-gspread                  # Google Sheets
-google-auth              # Google service account auth
+jinja2
+python-multipart
+itsdangerous
+gspread
+google-auth
 pydantic
-requests                 # for Odoo DB creation call
+requests

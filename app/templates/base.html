@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}Odoo Onboarding{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #0f0f13;
+            --surface:  #17171e;
+            --border:   #2a2a35;
+            --accent:   #7c6af7;
+            --accent2:  #4fc4cf;
+            --text:     #e8e8f0;
+            --muted:    #6b6b80;
+            --error:    #f87171;
+            --success:  #4ade80;
+            --radius:   12px;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* ── Progress Bar ── */
+        .progress-wrap {
+            width: 100%;
+            max-width: 620px;
+            margin-bottom: 40px;
+        }
+        .progress-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-track {
+            height: 3px;
+            background: var(--border);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 99px;
+            transition: width 0.5s ease;
+            width: var(--progress-width);
+        }
+        .steps-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+        .step-dot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: 'Syne', sans-serif;
+        }
+        .step-dot .dot {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+            transition: all 0.3s;
+        }
+        .step-dot.active .dot  { border-color: var(--accent); color: var(--accent); background: rgba(124,106,247,0.1); }
+        .step-dot.done .dot    { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+        /* ── Card ── */
+        .card {
+            width: 100%;
+            max-width: 620px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            animation: fadeUp 0.4s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header { margin-bottom: 32px; }
+        .card-header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 26px; font-weight: 800;
+            line-height: 1.2;
+        }
+        .card-header p {
+            color: var(--muted);
+            margin-top: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ── Form Elements ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-grid .full { grid-column: 1 / -1; }
+
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field label {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-family: 'Syne', sans-serif;
+        }
+        .field input, .field select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .field input:focus, .field select:focus { border-color: var(--accent); }
+        .field input::placeholder { color: var(--muted); }
+        .field select option { background: var(--surface); }
+
+        /* ── Buttons ── */
+        .btn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            gap: 12px;
+        }
+        .btn {
+            padding: 13px 28px;
+            border-radius: var(--radius);
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #6357e0);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            padding: 13px 0;
+        }
+        .btn-ghost:hover { color: var(--accent2); }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .alert-error   { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
+        .alert-success { background: rgba(74,222,128,0.1);  border: 1px solid rgba(74,222,128,0.3);  color: var(--success); }
+
+        /* ── Repeating blocks (branches/users) ── */
+        .repeat-block {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .repeat-block .block-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent2);
+            margin-bottom: 16px;
+        }
+        .btn-remove {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: none; border: none;
+            color: var(--muted); cursor: pointer;
+            font-size: 18px; line-height: 1;
+            transition: color 0.2s;
+        }
+        .btn-remove:hover { color: var(--error); }
+
+        .btn-add {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            color: var(--muted);
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Success page ── */
+        .success-icon {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: rgba(74,222,128,0.1);
+            border: 2px solid var(--success);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            margin-bottom: 24px;
+        }
+        .cred-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 24px;
+        }
+        .cred-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .cred-row:last-child { border-bottom: none; }
+        .cred-row span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; font-family: 'Syne', sans-serif; }
+        .cred-val {
+            font-family: 'DM Mono', monospace;
+            color: var(--accent2);
+            background: rgba(79,196,207,0.08);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        /* ── Loading overlay ── */
+        .loading-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,15,19,0.85);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 44px; height: 44px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay p { color: var(--muted); font-size: 14px; font-family: 'Syne', sans-serif; }
+    </style>
+    {% block extra_style %}{% endblock %}
+</head>
+<body>
+
+<div class="progress-wrap">
+    <div class="progress-label">
+        <span>Onboarding</span>
+        <span>Step {% block step_num %}1{% endblock %} of 3</span>
+    </div>
+    <div class="progress-track">
+        <div class="progress-fill" style="--progress-width: {% block progress_pct %}33%{% endblock %}"></div>
+    </div>
+    <div class="steps-row">
+        <div class="step-dot {% block s1 %}{% endblock %}"><div class="dot">1</div>Company</div>
+        <div class="step-dot {% block s2 %}{% endblock %}"><div class="dot">2</div>Branches</div>
+        <div class="step-dot {% block s3 %}{% endblock %}"><div class="dot">3</div>Users</div>
+    </div>
+</div>
+
+{% block content %}{% endblock %}
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Setting up your workspace…</p>
+</div>
+
+<script>
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+</script>
+{% block extra_script %}{% endblock %}
+</body>
+</html>

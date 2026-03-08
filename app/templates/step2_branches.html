@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Branches{% endblock %}
+{% block step_num %}2{% endblock %}
+{% block progress_pct %}66%{% endblock %}
+{% block s1 %}done{% endblock %}
+{% block s2 %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1>Branches</h1>
+        <p>Does <strong>{{ company_name }}</strong> have any branches? Add them below or skip this step.</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">⚠ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/onboarding/step2" id="branchForm">
+        <div id="branchList">
+            <!-- branches injected by JS or server -->
+        </div>
+
+        <button type="button" class="btn-add" onclick="addBranch()">
+            + Add Branch
+        </button>
+
+        <div class="btn-row">
+            <a href="/onboarding/step1" class="btn btn-secondary">← Back</a>
+            <div style="display:flex; gap:12px;">
+                <button type="submit" name="skip" value="1" class="btn btn-ghost">
+                    Skip →
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Next — Users →
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script type="application/json" id="branches-data">{{ branches | tojson | safe }}</script>
+<script>
+let branchCount = 0;
+
+const existing = JSON.parse(document.getElementById('branches-data').textContent);
+existing.forEach(b => addBranch(b));
+
+function addBranch(data = {}) {
+    branchCount++;
+    const idx = branchCount;
+    const div = document.createElement('div');
+    div.className = 'repeat-block';
+    div.id = `branch-${idx}`;
+    div.innerHTML = `
+        <div class="block-title">Branch #${idx}</div>
+        <button type="button" class="btn-remove" onclick="removeBranch(${idx})">×</button>
+        <div class="form-grid">
+            <div class="field full">
+                <label>Branch Name *</label>
+                <input type="text" name="branch_name_${idx}" placeholder="e.g. Acme KSA"
+                       value="${data.name || ''}" required/>
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="branch_email_${idx}"
+                       placeholder="branch@company.com" value="${data.email || ''}"/>
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="tel" name="branch_phone_${idx}"
+                       placeholder="+966 50 000 0000" value="${data.phone || ''}"/>
+            </div>
+            <div class="field">
+                <label>Country</label>
+                <select name="branch_country_${idx}">
+                    <option value="">— Select —</option>
+                    <option value="EG" ${data.country === 'EG' ? 'selected' : ''}>Egypt</option>
+                    <option value="SA" ${data.country === 'SA' ? 'selected' : ''}>Saudi Arabia</option>
+                    <option value="AE" ${data.country === 'AE' ? 'selected' : ''}>UAE</option>
+                    <option value="US" ${data.country === 'US' ? 'selected' : ''}>United States</option>
+                    <option value="GB" ${data.country === 'GB' ? 'selected' : ''}>United Kingdom</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>City</label>
+                <input type="text" name="branch_city_${idx}"
+                       placeholder="Riyadh" value="${data.city || ''}"/>
+            </div>
+        </div>
+    `;
+    document.getElementById('branchList').appendChild(div);
+
+    // store count so backend knows how many to read
+    updateCount();
+}
+
+function removeBranch(idx) {
+    document.getElementById(`branch-${idx}`).remove();
+    updateCount();
+}
+
+function updateCount() {
+    let inp = document.getElementById('branchCountInput');
+    if (!inp) {
+        inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.id = 'branchCountInput';
+        inp.name = 'branch_count';
+        document.getElementById('branchForm').appendChild(inp);
+    }
+    inp.value = branchCount;
+}
+updateCount();
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Workspace Ready{% endblock %}
+{% block step_num %}3{% endblock %}
+{% block progress_pct %}100%{% endblock %}
+{% block s1 %}done{% endblock %}
+{% block s2 %}done{% endblock %}
+{% block s3 %}done{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="success-icon">✓</div>
+
+    <div class="card-header">
+        <h1>Your workspace is ready!</h1>
+        <p>
+            <strong>{{ company_name }}</strong>'s Odoo environment has been created.
+            Share the credentials below with your team to get started.
+        </p>
+    </div>
+
+    <div class="cred-box">
+        <div class="cred-row">
+            <span>URL</span>
+            <a href="{{ odoo_url }}" target="_blank" class="cred-val">{{ odoo_url }}</a>
+        </div>
+        {% for user in users %}
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div style="font-size:12px; color: var(--muted); font-family:'Syne',sans-serif; margin-bottom:8px;">
+                {{ user.name }}
+            </div>
+            <div class="cred-row">
+                <span>Login</span>
+                <span class="cred-val">{{ user.email }}</span>
+            </div>
+            <div class="cred-row">
+                <span>Password</span>
+                <span class="cred-val">{{ user.password }}</span>
+            </div>
+            <div class="cred-row">
+                <span>Role</span>
+                <span class="cred-val">{{ user.role }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="btn-row" style="margin-top: 28px;">
+        <a href="{{ odoo_url }}" target="_blank" class="btn btn-primary">
+            Open Workspace →
+        </a>
+        <a href="/onboarding/step1" class="btn btn-secondary">
+            + New Onboarding
+        </a>
+    </div>
+</div>
+{% endblock %}

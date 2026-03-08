@@ -1,0 +1,103 @@
+{% extends "base.html" %} {% block title %}Users{% endblock %} {% block step_num
+%}3{% endblock %} {% block progress_pct %}100%{% endblock %} {% block s1
+%}done{% endblock %} {% block s2 %}done{% endblock %} {% block s3 %}active{%
+endblock %} {% block content %}
+<div class="card">
+  <div class="card-header">
+    <h1>Users & Access</h1>
+    <p>
+      Add the users who will have access to
+      <strong>{{ company_name }}</strong>'s workspace.
+    </p>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-error">⚠ {{ error }}</div>
+  {% endif %}
+
+  <form
+    method="POST"
+    action="/onboarding/step3"
+    id="userForm"
+    onsubmit="showLoading()"
+  >
+    <div id="userList"></div>
+
+    <button type="button" class="btn-add" onclick="addUser()">
+      + Add User
+    </button>
+
+    <div class="btn-row">
+      <a href="/onboarding/step2" class="btn btn-secondary">← Back</a>
+      <button type="submit" class="btn btn-primary">Create Workspace →</button>
+    </div>
+  </form>
+</div>
+{% endblock %} {% block extra_script %}
+<script type="application/json" id="users-data">{{ users | tojson | safe }}</script>
+<script>
+  let userCount = 0;
+
+  const existing = JSON.parse(document.getElementById('users-data').textContent);
+  if (existing.length === 0) addUser();
+  else existing.forEach(u => addUser(u));
+
+  function addUser(data = {}) {
+      userCount++;
+      const idx = userCount;
+      const div = document.createElement('div');
+      div.className = 'repeat-block';
+      div.id = `user-${idx}`;
+      div.innerHTML = `
+          <div class="block-title">User #${idx}</div>
+          <button type="button" class="btn-remove" onclick="removeUser(${idx})">×</button>
+          <div class="form-grid">
+              <div class="field">
+                  <label>Full Name *</label>
+                  <input type="text" name="user_name_${idx}"
+                         placeholder="John Doe" value="${data.name || ''}" required/>
+              </div>
+              <div class="field">
+                  <label>Email (login) *</label>
+                  <input type="email" name="user_email_${idx}"
+                         placeholder="john@company.com" value="${data.email || ''}" required/>
+              </div>
+              <div class="field">
+                  <label>Password *</label>
+                  <input type="password" name="user_password_${idx}"
+                         placeholder="Min 8 characters" value="${data.password || ''}" required minlength="8"/>
+              </div>
+              <div class="field">
+                  <label>Role</label>
+                  <select name="user_role_${idx}">
+                      <option value="user"      ${(data.role||'user') === 'user'  ? 'selected':''}>User</option>
+                      <option value="manager"   ${data.role === 'manager'         ? 'selected':''}>Manager</option>
+                      <option value="admin"     ${data.role === 'admin'           ? 'selected':''}>Administrator</option>
+                  </select>
+              </div>
+          </div>
+      `;
+      document.getElementById('userList').appendChild(div);
+      updateCount();
+  }
+
+  function removeUser(idx) {
+      if (document.querySelectorAll('.repeat-block').length === 1) return; // keep at least 1
+      document.getElementById(`user-${idx}`).remove();
+      updateCount();
+  }
+
+  function updateCount() {
+      let inp = document.getElementById('userCountInput');
+      if (!inp) {
+          inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.id = 'userCountInput';
+          inp.name = 'user_count';
+          document.getElementById('userForm').appendChild(inp);
+      }
+      inp.value = userCount;
+  }
+  updateCount();
+</script>
+{% endblock %}
