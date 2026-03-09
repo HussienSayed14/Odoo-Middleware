@@ -29,3 +29,4 @@ class Row(BaseModel):
     status: RowStatus = RowStatus.pending
     record_id: Optional[str] = None
     error: Optional[str] = None
+    role: Optional[str] = "user"

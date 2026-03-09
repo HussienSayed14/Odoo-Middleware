@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Setting up your workspace{% endblock %}
+{% block step_num %}3{% endblock %}
+{% block progress_pct %}100%{% endblock %}
+{% block s1 %}done{% endblock %}
+{% block s2 %}done{% endblock %}
+{% block s3 %}active{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align:center;">
+    <div style="margin-bottom: 28px;">
+        <div class="spinner" style="margin: 0 auto 20px;"></div>
+        <h1 style="font-family:'Syne',sans-serif; font-size:22px; margin-bottom:8px;">
+            Setting up <strong>{{ company_name }}</strong>
+        </h1>
+        <p id="stepText" style="color:var(--muted); font-size:14px;">Starting...</p>
+    </div>
+
+    <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:16px; font-size:13px; color:var(--muted);">
+        This usually takes 30–60 seconds. Please don't close this page.
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+const jobId = "{{ job_id }}";
+
+async function poll() {
+    try {
+        const res = await fetch(`/onboarding/status/${jobId}`);
+        const data = await res.json();
+
+        document.getElementById('stepText').textContent = data.step;
+
+        if (data.status === 'done') {
+            // Store result and redirect to success
+            sessionStorage.setItem('job_result', JSON.stringify(data));
+            window.location.href = `/onboarding/success/${jobId}`;
+        } else if (data.status === 'error') {
+            document.getElementById('stepText').textContent = '⚠ ' + data.step;
+            document.querySelector('.spinner').style.display = 'none';
+        } else {
+            setTimeout(poll, 3000);
+        }
+    } catch(e) {
+        setTimeout(poll, 3000);
+    }
+}
+
+poll();
+</script>
+{% endblock %}

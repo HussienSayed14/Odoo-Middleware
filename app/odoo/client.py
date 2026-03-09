@@ -10,35 +10,36 @@ logger = logging.getLogger(__name__)
 class OdooClient:
     """Handles Odoo XML-RPC connection and DB management."""
 
-    def __init__(self, db: str):
+    def __init__(self, db: str, is_new_db: bool = False):
         self.db = db
         self.url = ODOO_URL
-        logger.info(f"[OdooClient] Connecting to {self.url} — DB: {db}")
+        self.admin_user = ODOO_ADMIN_USER if is_new_db else ODOO_ADMIN_USER
+        self.admin_password = ODOO_ADMIN_PASSWORD if is_new_db else ODOO_ADMIN_PASSWORD
+        logger.info(f"[OdooClient] Connecting to {self.url} — DB: {db} — user: {self.admin_user}")
         self.common = xmlrpc.client.ServerProxy(f"{self.url}/xmlrpc/2/common")
         self.models = xmlrpc.client.ServerProxy(f"{self.url}/xmlrpc/2/object")
         self.uid = self._authenticate()
 
     def _authenticate(self) -> int:
-        logger.info(f"[OdooClient] Authenticating user '{ODOO_ADMIN_USER}' on DB '{self.db}'")
-        uid = self.common.authenticate(self.db, ODOO_ADMIN_USER, ODOO_ADMIN_PASSWORD, {})
+        logger.info(f"[OdooClient] Authenticating '{self.admin_user}' on DB '{self.db}'")
+        uid = self.common.authenticate(self.db, self.admin_user, self.admin_password, {})
         if not uid:
             raise Exception(f"Odoo authentication failed for database '{self.db}'")
         logger.info(f"[OdooClient] Authenticated — UID: {uid}")
         return uid # type: ignore
 
     def execute(self, model: str, method: str, args: list, kwargs: dict = None) -> any: # type: ignore
-        logger.debug(f"[OdooClient] execute — model={model} method={method} args={args} kwargs={kwargs}")
+        logger.debug(f"[OdooClient] execute — model={model} method={method}")
         result = self.models.execute_kw(
-            self.db, self.uid, ODOO_ADMIN_PASSWORD,
+            self.db, self.uid, self.admin_password,
             model, method, args, kwargs or {}
         )
-        logger.debug(f"[OdooClient] execute result — {result}")
+        logger.debug(f"[OdooClient] result — {result}")
         return result
 
     @staticmethod
     def create_database(db_name: str) -> None:
         logger.info(f"[OdooClient] Creating database '{db_name}' at {ODOO_URL}")
-        logger.debug(f"[OdooClient] master_pwd={'*' * len(ODOO_MASTER_PASSWORD)} admin_user=admin") # type: ignore
 
         response = requests.post(
             f"{ODOO_URL}/web/database/create",
@@ -51,16 +52,22 @@ class OdooClient:
                 "country_code": "eg",
                 "phone": "",
             },
+            allow_redirects=False,   # ← key fix
         )
 
-        logger.info(f"[OdooClient] DB create response — status={response.status_code}")
-        logger.debug(f"[OdooClient] DB create response body — {response.text[:500]}")
+        logger.info(f"[OdooClient] DB create status={response.status_code} headers={dict(response.headers)}")
 
-        if response.status_code != 200 or "error" in response.text.lower():
-            raise Exception(f"Failed to create Odoo database '{db_name}': {response.text[:500]}")
+        # Success = Odoo redirects to /web (303 to /web means DB was created)
+        if response.status_code == 303 and "/web" in response.headers.get("Location", ""):
+            logger.info(f"[OdooClient] Database '{db_name}' created successfully")
+            return
 
-        logger.info(f"[OdooClient] Database '{db_name}' created successfully")
-
+        # If we get anything else, something went wrong
+        raise Exception(
+            f"Failed to create database '{db_name}'. "
+            f"Status: {response.status_code}. "
+            f"Response: {response.text[:300]}"
+        )
     @staticmethod
     def database_exists(db_name: str) -> bool:
         logger.info(f"[OdooClient] Checking if database '{db_name}' exists")
@@ -70,3 +77,4 @@ class OdooClient:
         exists = db_name in existing_dbs # type: ignore
         logger.info(f"[OdooClient] '{db_name}' exists: {exists}")
         return exists
+    

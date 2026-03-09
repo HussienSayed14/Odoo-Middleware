@@ -10,17 +10,16 @@ class CreateBranchAction(BaseAction):
             raise ValueError("'parent_company' is required for create_branch")
 
     def execute(self) -> int:
-        # Look up parent company by name
+        # Look up parent company in res.company (not res.partner)
         parent_ids = self.client.execute(
-            "res.partner", "search",
-            [[["name", "=", self.row.parent_company], ["is_company", "=", True]]]
+            "res.company", "search",
+            [[["name", "=", self.row.parent_company]]]
         )
         if not parent_ids:
             raise ValueError(f"Parent company '{self.row.parent_company}' not found in Odoo")
 
         payload = {
             "name": self.row.name,
-            "is_company": True,
             "parent_id": parent_ids[0],
         }
         if self.row.email:
@@ -34,4 +33,4 @@ class CreateBranchAction(BaseAction):
             if country_ids:
                 payload["country_id"] = country_ids[0]
 
-        return self.client.execute("res.partner", "create", [payload])
+        return self.client.execute("res.company", "create", [payload])

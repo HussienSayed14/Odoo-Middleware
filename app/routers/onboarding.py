@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, Request, Form, logger
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 import re
@@ -14,6 +16,9 @@ from app.config import ODOO_URL
 router = APIRouter(prefix="/onboarding")
 templates = Jinja2Templates(directory="app/templates")
 
+# In-memory job store — good enough for MVP
+jobs: dict = {}
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -22,6 +27,80 @@ def get_session(request: Request) -> dict:
 
 def clear_session(request: Request):
     request.session.pop("onboarding", None)
+
+
+# ── Background worker ─────────────────────────────────────────────────────
+
+def run_onboarding(job_id: str, company_data: dict, branches: list, users: list):
+    try:
+        jobs[job_id] = {"status": "running", "step": "Creating database..."}
+
+        db_name = company_data["name"].lower().strip().replace(" ", "_") + "_db"
+        is_new = not OdooClient.database_exists(db_name)
+
+        if is_new:
+            jobs[job_id]["step"] = "Creating database (this takes ~30 seconds)..."
+            OdooClient.create_database(db_name)
+
+        jobs[job_id]["step"] = "Connecting to workspace..."
+        client = OdooClient(db=db_name, is_new_db=is_new) # type: ignore
+
+        jobs[job_id]["step"] = "Creating company..."
+        company_row = Row(
+            row_index=0,
+            customer_name=company_data["name"],
+            action=ActionType.create_company,
+            name=company_data["name"],
+            email=company_data["email"] or None,
+            phone=company_data["phone"] or None,
+            country=company_data["country"] or None,
+        )
+        CreateCompanyAction(client, company_row).run()
+
+        for i, branch in enumerate(branches):
+            jobs[job_id]["step"] = f"Creating branch {i+1} of {len(branches)}..."
+            try:
+                branch_row = Row(
+                    row_index=0,
+                    customer_name=company_data["name"],
+                    action=ActionType.create_branch,
+                    name=branch["name"],
+                    parent_company=company_data["name"],
+                    email=branch["email"] or None,
+                    phone=branch["phone"] or None,
+                    country=branch["country"] or None,
+                )
+                CreateBranchAction(client, branch_row).run()
+            except Exception as e:
+                logger.error(f"[onboarding] Branch '{branch['name']}' failed: {e}") # type: ignore
+                raise  # re-raise so the whole job fails visibly
+
+
+        created_users = []
+        for i, user in enumerate(users):
+            jobs[job_id]["step"] = f"Creating user {i+1} of {len(users)}..."
+            user_row = Row(
+                row_index=0,
+                customer_name=company_data["name"],
+                action=ActionType.create_user,
+                name=user["name"],
+                email=user["email"],
+                role=user["role"],
+            )
+            user_id = CreateUserAction(client, user_row).run()
+            client.execute("res.users", "write", [[user_id], {"password": user["password"]}])
+            created_users.append({**user, "id": user_id})
+
+        jobs[job_id] = {
+            "status": "done",
+            "step": "Done!",
+            "company_name": company_data["name"],
+            "odoo_url": f"{ODOO_URL}/web/login?db={db_name}",
+            "users": created_users,
+        }
+
+    except Exception as e:
+        jobs[job_id] = {"status": "error", "step": str(e)}
 
 
 # ── Step 1: Company ───────────────────────────────────────────────────────
@@ -133,7 +212,7 @@ async def step3_get(request: Request):
     })
 
 @router.post("/step3")
-async def step3_post(request: Request):
+async def step3_post(request: Request, background_tasks: BackgroundTasks):
     form = await request.form()
     session = get_session(request)
 
@@ -156,7 +235,6 @@ async def step3_post(request: Request):
         if len(password) < 8:
             errors.append(f"User #{i}: password must be at least 8 characters.")
             continue
-
         users.append({"name": name, "email": email, "password": password, "role": role})
 
     if errors:
@@ -177,72 +255,41 @@ async def step3_post(request: Request):
 
     session["users"] = users
 
-    # ── Process everything ─────────────────────────────────────────────────
-    try:
-        company_data = session["company"]
-        branches     = session.get("branches", [])
+    # Fire background job
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {"status": "running", "step": "Starting..."}
+    background_tasks.add_task(
+        run_onboarding,
+        job_id,
+        session["company"],
+        session.get("branches", []),
+        users,
+    )
+    clear_session(request)
 
-        # 1. Create DB
-        db_name = company_data["name"].lower().strip().replace(" ", "_") + "_db"
-        if not OdooClient.database_exists(db_name):
-            OdooClient.create_database(db_name)
+    return templates.TemplateResponse("processing.html", {
+        "request": request,
+        "job_id": job_id,
+        "company_name": session["company"]["name"],
+    })
 
-        client = OdooClient(db=db_name)
 
-        # 2. Create company
-        company_row = Row(
-            row_index=0,
-            customer_name=company_data["name"],
-            action=ActionType.create_company,
-            name=company_data["name"],
-            email=company_data["email"] or None,
-            phone=company_data["phone"] or None,
-            country=company_data["country"] or None,
-        )
-        company_id = CreateCompanyAction(client, company_row).run()
+# ── Poll endpoint ─────────────────────────────────────────────────────────
 
-        # 3. Create branches
-        for branch in branches:
-            branch_row = Row(
-                row_index=0,
-                customer_name=company_data["name"],
-                action=ActionType.create_branch,
-                name=branch["name"],
-                parent_company=company_data["name"],
-                email=branch["email"] or None,
-                phone=branch["phone"] or None,
-                country=branch["country"] or None,
-            )
-            CreateBranchAction(client, branch_row).run()
+@router.get("/status/{job_id}")
+async def job_status(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return JSONResponse({"status": "error", "step": "Job not found"})
+    return JSONResponse(job)
 
-        # 4. Create users
-        created_users = []
-        for user in users:
-            user_row = Row(
-                row_index=0,
-                customer_name=company_data["name"],
-                action=ActionType.create_user,
-                name=user["name"],
-                email=user["email"],
-            )
-            user_id = CreateUserAction(client, user_row).run()
 
-            # Set password
-            client.execute("res.users", "write", [[user_id], {"password": user["password"]}])
-            created_users.append({**user, "id": user_id})
-
-        clear_session(request)
-        return templates.TemplateResponse("success.html", {
-            "request": request,
-            "company_name": company_data["name"],
-            "odoo_url": f"{ODOO_URL}/web/login?db={db_name}",
-            "users": created_users,
-        })
-
-    except Exception as e:
-        return templates.TemplateResponse("step3_users.html", {
-            "request": request,
-            "company_name": session["company"]["name"],
-            "users": users,
-            "error": f"Something went wrong: {str(e)}",
-        })
+@router.get("/success/{job_id}", response_class=HTMLResponse)
+async def success_page(request: Request, job_id: str):
+    job = jobs.get(job_id, {})
+    return templates.TemplateResponse("success.html", {
+        "request": request,
+        "company_name": job.get("company_name", ""),
+        "odoo_url": job.get("odoo_url", ODOO_URL),
+        "users": job.get("users", []),
+    })
