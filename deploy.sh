@@ -23,7 +23,7 @@ echo "==> Starting container"
 docker run -d \
   --name $CONTAINER_NAME \
   --restart unless-stopped \
-  -p 8000:8000 \
+  --network host \
   --env-file .env \
   $IMAGE_NAME
 
