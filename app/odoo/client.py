@@ -57,11 +57,17 @@ class OdooClient:
 
         logger.info(f"[OdooClient] DB create status={response.status_code} headers={dict(response.headers)}")
 
-        # Success = Odoo redirects to /web (303 to /web means DB was created)
-        if response.status_code == 303 and "/web" in response.headers.get("Location", ""):
-            logger.info(f"[OdooClient] Database '{db_name}' created successfully")
-            return
-
+       # Success = Odoo redirects to /odoo or /web (303)
+        if response.status_code == 303:
+            location = response.headers.get("Location", "")
+            if "/odoo" in location or "/web" in location:
+                logger.info(f"[OdooClient] Database '{db_name}' created successfully")
+                return
+            else:
+                raise Exception(
+                    f"Failed to create database '{db_name}'. "
+                    f"Redirected to: {location} — likely wrong master password."
+                )
         # If we get anything else, something went wrong
         raise Exception(
             f"Failed to create database '{db_name}'. "
