@@ -71,10 +71,25 @@ class OdooClient:
     @staticmethod
     def database_exists(db_name: str) -> bool:
         logger.info(f"[OdooClient] Checking if database '{db_name}' exists")
-        common = xmlrpc.client.ServerProxy(f"{ODOO_URL}/xmlrpc/2/db")
-        existing_dbs = common.list()
-        logger.info(f"[OdooClient] Existing databases: {existing_dbs}")
-        exists = db_name in existing_dbs # type: ignore
-        logger.info(f"[OdooClient] '{db_name}' exists: {exists}")
-        return exists
-    
+        try:
+            common = xmlrpc.client.ServerProxy(f"{ODOO_URL}/xmlrpc/2/db")
+            existing_dbs = common.list()
+            logger.info(f"[OdooClient] Existing databases: {existing_dbs}")
+            exists = db_name in existing_dbs # type: ignore
+            return exists
+        except Exception as e:
+            logger.error(f"[OdooClient] database_exists error: {e}")
+            # Fallback — try via HTTP endpoint instead
+            try:
+                response = requests.post(
+                    f"{ODOO_URL}/web/database/list",
+                    json={},
+                    headers={"Content-Type": "application/json"}
+                )
+                logger.info(f"[OdooClient] DB list via HTTP: {response.text[:200]}")
+                dbs = response.json().get("result", [])
+                return db_name in dbs
+            except Exception as e2:
+                logger.error(f"[OdooClient] DB list fallback error: {e2}")
+                return False
+        
