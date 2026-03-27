@@ -9,7 +9,7 @@
 <div class="card">
     <div class="card-header">
         <h1>Branches</h1>
-        <p>Does <strong>{{ company_name }}</strong> have any branches? Add them below or skip this step.</p>
+        <p>Does <strong>{{ company_name }}</strong> have any branches? Add them below or skip.</p>
     </div>
 
     {% if error %}
@@ -17,23 +17,15 @@
     {% endif %}
 
     <form method="POST" action="/onboarding/step2" id="branchForm">
-        <div id="branchList">
-            <!-- branches injected by JS or server -->
-        </div>
+        <div id="branchList"></div>
 
-        <button type="button" class="btn-add" onclick="addBranch()">
-            + Add Branch
-        </button>
+        <button type="button" class="btn-add" onclick="addBranch()">+ Add Branch</button>
 
         <div class="btn-row">
             <a href="/onboarding/step1" class="btn btn-secondary">← Back</a>
             <div style="display:flex; gap:12px;">
-                <button type="submit" name="skip" value="1" class="btn btn-ghost">
-                    Skip →
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    Next — Users →
-                </button>
+                <button type="submit" name="skip" value="1" class="btn btn-ghost">Skip →</button>
+                <button type="submit" class="btn btn-primary">Next — Users →</button>
             </div>
         </div>
     </form>
@@ -41,11 +33,9 @@
 {% endblock %}
 
 {% block extra_script %}
-<script type="application/json" id="branches-data">{{ branches | tojson | safe }}</script>
 <script>
 let branchCount = 0;
-
-const existing = JSON.parse(document.getElementById('branches-data').textContent);
+const existing = {{ branches | tojson | safe }};
 existing.forEach(b => addBranch(b));
 
 function addBranch(data = {}) {
@@ -65,35 +55,33 @@ function addBranch(data = {}) {
             </div>
             <div class="field">
                 <label>Email</label>
-                <input type="email" name="branch_email_${idx}"
-                       placeholder="branch@company.com" value="${data.email || ''}"/>
+                <input type="email" name="branch_email_${idx}" placeholder="branch@company.com"
+                       value="${data.email || ''}"/>
             </div>
             <div class="field">
                 <label>Phone</label>
-                <input type="tel" name="branch_phone_${idx}"
-                       placeholder="+966 50 000 0000" value="${data.phone || ''}"/>
+                <input type="tel" name="branch_phone_${idx}" placeholder="+966 50 000 0000"
+                       value="${data.phone || ''}"/>
             </div>
             <div class="field">
                 <label>Country</label>
                 <select name="branch_country_${idx}">
                     <option value="">— Select —</option>
-                    <option value="EG" ${data.country === 'EG' ? 'selected' : ''}>Egypt</option>
-                    <option value="SA" ${data.country === 'SA' ? 'selected' : ''}>Saudi Arabia</option>
-                    <option value="AE" ${data.country === 'AE' ? 'selected' : ''}>UAE</option>
-                    <option value="US" ${data.country === 'US' ? 'selected' : ''}>United States</option>
-                    <option value="GB" ${data.country === 'GB' ? 'selected' : ''}>United Kingdom</option>
+                    <option value="EG" ${data.country==='EG'?'selected':''}>🇪🇬 Egypt</option>
+                    <option value="SA" ${data.country==='SA'?'selected':''}>🇸🇦 Saudi Arabia</option>
+                    <option value="AE" ${data.country==='AE'?'selected':''}>🇦🇪 UAE</option>
+                    <option value="US" ${data.country==='US'?'selected':''}>🇺🇸 United States</option>
+                    <option value="GB" ${data.country==='GB'?'selected':''}>🇬🇧 United Kingdom</option>
                 </select>
             </div>
             <div class="field">
                 <label>City</label>
-                <input type="text" name="branch_city_${idx}"
-                       placeholder="Riyadh" value="${data.city || ''}"/>
+                <input type="text" name="branch_city_${idx}" placeholder="Riyadh"
+                       value="${data.city || ''}"/>
             </div>
         </div>
     `;
     document.getElementById('branchList').appendChild(div);
-
-    // store count so backend knows how many to read
     updateCount();
 }
 

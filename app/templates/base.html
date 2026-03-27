@@ -19,6 +19,7 @@
             --muted:    #6b6b80;
             --error:    #f87171;
             --success:  #4ade80;
+            --warning:  #fbbf24;
             --radius:   12px;
         }
 
@@ -36,7 +37,7 @@
         /* ── Progress Bar ── */
         .progress-wrap {
             width: 100%;
-            max-width: 620px;
+            max-width: 680px;
             margin-bottom: 40px;
         }
         .progress-label {
@@ -60,7 +61,6 @@
             background: linear-gradient(90deg, var(--accent), var(--accent2));
             border-radius: 99px;
             transition: width 0.5s ease;
-            width: var(--progress-width);
         }
         .steps-row {
             display: flex;
@@ -90,7 +90,7 @@
         /* ── Card ── */
         .card {
             width: 100%;
-            max-width: 620px;
+            max-width: 680px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 20px;
@@ -102,7 +102,7 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .card-header { margin-bottom: 32px; }
+        .card-header { margin-bottom: 28px; }
         .card-header h1 {
             font-family: 'Syne', sans-serif;
             font-size: 26px; font-weight: 800;
@@ -115,11 +115,25 @@
             line-height: 1.6;
         }
 
+        /* ── Section label ── */
+        .section-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
         /* ── Form Elements ── */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
+            margin-bottom: 8px;
         }
         .form-grid .full { grid-column: 1 / -1; }
 
@@ -131,6 +145,17 @@
             text-transform: uppercase;
             color: var(--muted);
             font-family: 'Syne', sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .field-hint {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: none;
+            letter-spacing: 0;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 400;
         }
         .field input, .field select {
             background: var(--bg);
@@ -147,6 +172,58 @@
         .field input:focus, .field select:focus { border-color: var(--accent); }
         .field input::placeholder { color: var(--muted); }
         .field select option { background: var(--surface); }
+        .field-error {
+            font-size: 11px;
+            color: var(--error);
+            min-height: 16px;
+        }
+
+        /* ── Input with badge ── */
+        .input-with-badge {
+            position: relative;
+        }
+        .input-with-badge input {
+            padding-right: 40px;
+        }
+        .input-badge {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--success);
+            pointer-events: none;
+        }
+
+        /* ── Radio group ── */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            flex: 1;
+            text-transform: none;
+            letter-spacing: 0;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 400;
+            color: var(--text);
+        }
+        .radio-option input[type="radio"] { accent-color: var(--accent); }
+        .radio-option:has(input:checked) {
+            border-color: var(--accent);
+            background: rgba(124,106,247,0.08);
+        }
 
         /* ── Buttons ── */
         .btn-row {
@@ -197,11 +274,13 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
+            line-height: 1.5;
         }
         .alert-error   { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
         .alert-success { background: rgba(74,222,128,0.1);  border: 1px solid rgba(74,222,128,0.3);  color: var(--success); }
+        .alert-warning { background: rgba(251,191,36,0.1);  border: 1px solid rgba(251,191,36,0.3);  color: var(--warning); }
 
-        /* ── Repeating blocks (branches/users) ── */
+        /* ── Repeating blocks ── */
         .repeat-block {
             background: var(--bg);
             border: 1px solid var(--border);
@@ -268,9 +347,14 @@
             font-size: 14px;
         }
         .cred-row:last-child { border-bottom: none; }
-        .cred-row span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; font-family: 'Syne', sans-serif; }
+        .cred-row span:first-child {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-family: 'Syne', sans-serif;
+        }
         .cred-val {
-            font-family: 'DM Mono', monospace;
+            font-family: monospace;
             color: var(--accent2);
             background: rgba(79,196,207,0.08);
             padding: 4px 10px;
@@ -278,7 +362,7 @@
             font-size: 13px;
         }
 
-        /* ── Loading overlay ── */
+        /* ── Loading ── */
         .loading-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -307,10 +391,10 @@
 <div class="progress-wrap">
     <div class="progress-label">
         <span>Onboarding</span>
-        <span>Step {% block step_num %}1{% endblock %} of 3</span>
+        <span>Step {{ step_num | default(1) }} of 3</span>
     </div>
     <div class="progress-track">
-        <div class="progress-fill" style="--progress-width: {% block progress_pct %}33%{% endblock %}"></div>
+        <div class="progress-fill" style="width: {{ progress_pct | default('33%') }}"></div>
     </div>
     <div class="steps-row">
         <div class="step-dot {% block s1 %}{% endblock %}"><div class="dot">1</div>Company</div>

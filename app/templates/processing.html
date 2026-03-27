@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Setting up your workspace{% endblock %}
+{% block title %}Setting up workspace{% endblock %}
 {% block step_num %}3{% endblock %}
 {% block progress_pct %}100%{% endblock %}
 {% block s1 %}done{% endblock %}
@@ -15,7 +15,6 @@
         </h1>
         <p id="stepText" style="color:var(--muted); font-size:14px;">Starting...</p>
     </div>
-
     <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:16px; font-size:13px; color:var(--muted);">
         This usually takes 30–60 seconds. Please don't close this page.
     </div>
@@ -25,17 +24,12 @@
 {% block extra_script %}
 <script>
 const jobId = "{{ job_id }}";
-
 async function poll() {
     try {
         const res = await fetch(`/onboarding/status/${jobId}`);
         const data = await res.json();
-
         document.getElementById('stepText').textContent = data.step;
-
         if (data.status === 'done') {
-            // Store result and redirect to success
-            sessionStorage.setItem('job_result', JSON.stringify(data));
             window.location.href = `/onboarding/success/${jobId}`;
         } else if (data.status === 'error') {
             document.getElementById('stepText').textContent = '⚠ ' + data.step;
@@ -47,7 +41,6 @@ async function poll() {
         setTimeout(poll, 3000);
     }
 }
-
 poll();
 </script>
 {% endblock %}
