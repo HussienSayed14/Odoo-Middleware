@@ -33,6 +33,6 @@ class CreateUserAction(BaseAction):
             "name": self.row.name,
             "login": self.row.email,
             "email": self.row.email,
-            "group_ids": [(4, group_id)],
+            "groups_id": [(4, group_id)],
         }
         return self.client.execute("res.users", "create", [payload])
