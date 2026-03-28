@@ -143,18 +143,19 @@ async def step1_get(request: Request):
 async def step1_post(request: Request):
     form = await request.form()
     session = get_session(request)
-    name     = (form.get("name") or "").strip() # type: ignore
-    db_mode  = (form.get("db_mode") or "new").strip() # type: ignore
-    db_name  = (form.get("db_name") or "").strip().lower() # type: ignore
-    existing = (form.get("existing_db_name") or "").strip().lower() # type: ignore
-    email    = (form.get("email") or "").strip() # type: ignore
-    phone    = (form.get("phone") or "").strip() # type: ignore
-    country  = (form.get("country") or "").strip() # type: ignore
-    city     = (form.get("city") or "").strip() # type: ignore
-    website  = (form.get("website") or "").strip() # type: ignore
+    name     = (form.get("name") or "").strip()
+    db_mode  = (form.get("db_mode") or "new").strip()
+    db_name  = (form.get("db_name") or "").strip().lower()
+    existing = (form.get("existing_db_name") or "").strip().lower()
+    email    = (form.get("email") or "").strip()
+    phone    = (form.get("phone") or "").strip()
+    country  = (form.get("country") or "").strip()
+    city     = (form.get("city") or "").strip()
+    website  = (form.get("website") or "").strip()
+    industry = (form.get("industry") or "").strip()
     data = {"name": name, "db_mode": db_mode, "db_name": db_name,
             "existing_db_name": existing, "email": email,
-            "phone": phone, "country": country, "city": city, "website": website}
+            "phone": phone, "country": country, "city": city, "website": website, "industry": industry}
 
     if not name:
         return templates.TemplateResponse("step1_company.html", s1(request, data, "Company name is required."))
@@ -195,22 +196,22 @@ async def step2_post(request: Request):
         session["branches"] = []
         return RedirectResponse("/onboarding/step3", status_code=302)
 
-    branch_count = int(form.get("branch_count", 0)) # type: ignore
+    branch_count = int(form.get("branch_count", 0))
     branches = []
     errors = []
     for i in range(1, branch_count + 1):
-        name = (form.get(f"branch_name_{i}") or "").strip() # type: ignore
+        name = (form.get(f"branch_name_{i}") or "").strip()
         if not name:
             continue
-        email = (form.get(f"branch_email_{i}") or "").strip() # type: ignore
+        email = (form.get(f"branch_email_{i}") or "").strip()
         if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             errors.append(f"Branch #{i}: '{email}' is not a valid email.")
             continue
         branches.append({
             "name": name, "email": email,
-            "phone": (form.get(f"branch_phone_{i}") or "").strip(), # type: ignore
-            "country": (form.get(f"branch_country_{i}") or "").strip(), # type: ignore
-            "city": (form.get(f"branch_city_{i}") or "").strip(), # type: ignore
+            "phone": (form.get(f"branch_phone_{i}") or "").strip(),
+            "country": (form.get(f"branch_country_{i}") or "").strip(),
+            "city": (form.get(f"branch_city_{i}") or "").strip(),
         })
 
     if errors:
@@ -235,16 +236,16 @@ async def step3_post(request: Request, background_tasks: BackgroundTasks):
     if "company" not in session:
         return RedirectResponse("/onboarding/step1", status_code=302)
 
-    user_count = int(form.get("user_count", 0)) # type: ignore
+    user_count = int(form.get("user_count", 0))
     users = []
     errors = []
     seen_emails: set = set()
 
     for i in range(1, user_count + 1):
-        name     = (form.get(f"user_name_{i}") or "").strip() # type: ignore
-        email    = (form.get(f"user_email_{i}") or "").strip().lower() # type: ignore
-        password = (form.get(f"user_password_{i}") or "").strip() # type: ignore
-        role     = (form.get(f"user_role_{i}") or "user").strip() # type: ignore
+        name     = (form.get(f"user_name_{i}") or "").strip()
+        email    = (form.get(f"user_email_{i}") or "").strip().lower()
+        password = (form.get(f"user_password_{i}") or "").strip()
+        role     = (form.get(f"user_role_{i}") or "user").strip()
         if not name or not email or not password:
             errors.append(f"User #{i}: name, email and password are all required.")
             continue
@@ -267,17 +268,17 @@ async def step3_post(request: Request, background_tasks: BackgroundTasks):
 
     company_data = session.get("company")
     branches     = session.get("branches", [])
-    logger.info(f"[Step3] company='{company_data['name']}' db='{company_data['db_name']}' users={len(users)} branches={len(branches)}") # type: ignore
+    logger.info(f"[Step3] company='{company_data['name']}' db='{company_data['db_name']}' users={len(users)} branches={len(branches)}")
 
     session["users"] = users
     job_id = str(uuid.uuid4())
     jobs[job_id] = {"status": "running", "step": "Starting..."}
-    background_tasks.add_task(run_onboarding, job_id, company_data, branches, users) # type: ignore
+    background_tasks.add_task(run_onboarding, job_id, company_data, branches, users)
     clear_session(request)
 
     return templates.TemplateResponse("processing.html", {
         "request": request, "job_id": job_id,
-        "company_name": company_data["name"], # type: ignore
+        "company_name": company_data["name"],
         "step_num": 3, "progress_pct": "100%",
     })
 
@@ -289,6 +290,22 @@ async def job_status(job_id: str):
         return JSONResponse({"status": "error", "step": "Job not found."})
     return JSONResponse(job)
 
+
+
+
+@router.get("/check-db")
+async def check_db(name: str):
+    """Real-time DB name availability check."""
+    from app.routers.onboarding import validate_db_name
+    err = validate_db_name(name)
+    if err:
+        return JSONResponse({"available": False, "error": err})
+    try:
+        exists = OdooClient.database_exists(name)
+        return JSONResponse({"available": not exists})
+    except Exception as e:
+        logger.warning(f"[check-db] Could not check '{name}': {e}")
+        return JSONResponse({"available": True})  # assume available if check fails
 
 @router.get("/success/{job_id}", response_class=HTMLResponse)
 async def success_page(request: Request, job_id: str):
