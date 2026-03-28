@@ -37,54 +37,6 @@
                     <option value="other"        {% if data.industry == 'other' %}selected{% endif %}>🔧 Other</option>
                 </select>
             </div>
-        </div>
-
-        <div class="section-label">Workspace Database</div>
-        <div class="form-grid">
-            <div class="field full">
-                <label>Database Mode *</label>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input type="radio" name="db_mode" value="new"
-                               {% if not data.db_mode or data.db_mode == 'new' %}checked{% endif %}
-                               onchange="toggleDbMode(this.value)"/>
-                        <span>Create new database</span>
-                    </label>
-                    <label class="radio-option">
-                        <input type="radio" name="db_mode" value="existing"
-                               {% if data.db_mode == 'existing' %}checked{% endif %}
-                               onchange="toggleDbMode(this.value)"/>
-                        <span>Use existing database</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="field full" id="newDbField">
-                <label>Database Name *
-                    <span class="field-hint">Lowercase, no spaces, max 30 chars (e.g. acme_egypt)</span>
-                </label>
-                <div class="input-with-badge">
-                    <input type="text" name="db_name" id="dbNameInput"
-                           placeholder="auto_generated"
-                           value="{{ data.db_name or '' }}"
-                           maxlength="30"
-                           oninput="onDbNameInput(this)"/>
-                    <span class="input-badge" id="dbNameBadge">–</span>
-                </div>
-                <div class="field-error" id="dbNameError"></div>
-                <div id="dbSuggestions" class="suggestions-row"></div>
-            </div>
-
-            <div class="field full" id="existingDbField" style="display:none;">
-                <label>Existing Database Name *</label>
-                <input type="text" name="existing_db_name" id="existingDbInput"
-                       placeholder="e.g. acme_egypt"
-                       value="{{ data.existing_db_name or '' }}"/>
-            </div>
-        </div>
-
-        <div class="section-label" style="margin-top:24px;">Company Information</div>
-        <div class="form-grid">
             <div class="field full">
                 <label>Company Name *</label>
                 <input type="text" name="name" id="companyName"
@@ -123,6 +75,48 @@
                 <label>Website</label>
                 <input type="url" name="website" placeholder="https://company.com"
                        value="{{ data.website or '' }}"/>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:24px;">Workspace Database</div>
+        <div class="form-grid">
+            <div class="field full">
+                <label>Database Mode *</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="db_mode" value="new"
+                               {% if not data.db_mode or data.db_mode == 'new' %}checked{% endif %}
+                               onchange="toggleDbMode(this.value)"/>
+                        <span>Create new database</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="db_mode" value="existing"
+                               {% if data.db_mode == 'existing' %}checked{% endif %}
+                               onchange="toggleDbMode(this.value)"/>
+                        <span>Use existing database</span>
+                    </label>
+                </div>
+            </div>
+            <div class="field full" id="newDbField">
+                <label>Database Name *
+                    <span class="field-hint">Lowercase, no spaces, max 30 chars (e.g. acme_egypt)</span>
+                </label>
+                <div class="input-with-badge">
+                    <input type="text" name="db_name" id="dbNameInput"
+                           placeholder="auto_generated"
+                           value="{{ data.db_name or '' }}"
+                           maxlength="30"
+                           oninput="onDbNameInput(this)"/>
+                    <span class="input-badge" id="dbNameBadge">–</span>
+                </div>
+                <div class="field-error" id="dbNameError"></div>
+                <div id="dbSuggestions" class="suggestions-row"></div>
+            </div>
+            <div class="field full" id="existingDbField" style="display:none;">
+                <label>Existing Database Name *</label>
+                <input type="text" name="existing_db_name" id="existingDbInput"
+                       placeholder="e.g. acme_egypt"
+                       value="{{ data.existing_db_name or '' }}"/>
             </div>
         </div>
 
